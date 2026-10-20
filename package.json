@@ -1,0 +1,11 @@
+{
+  "name": "demandavial",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Herramienta académica para el análisis preliminar de aforos y demanda de tránsito",
+  "scripts": {
+    "test": "node --test tests/",
+    "dev": "node serve.mjs"
+  },
+  "license": "MIT"
+}

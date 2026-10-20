@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es-CO" data-tema="oscuro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DemandaVial — Aforos y demanda de tránsito</title>
+<meta name="description" content="Herramienta académica para el análisis preliminar de aforos vehiculares: hora pico móvil, FHP, composición vehicular y proyección.">
+<meta name="theme-color" content="#0f1520">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%2314b8a6'/%3E%3Cpath d='M6 18V12M10 18V8M14 18V10M18 18V5' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1520; --bg2:#151d2b; --card:#1a2333; --card2:#212c3f; --line:#2c3a52;
+  --tx:#e7edf6; --tx2:#9fb0c8; --tx3:#6f819c;
+  --ac:#2dd4bf; --ac2:#14b8a6; --acbg:rgba(45,212,191,.12);
+  --warn:#fbbf24; --warnbg:rgba(251,191,36,.12); --bad:#f87171; --ok:#4ade80;
+  --c-autos:#60a5fa; --c-motos:#c084fc; --c-buses:#fbbf24; --c-camiones:#f87171;
+  --sh:0 6px 24px rgba(0,0,0,.35); --r:14px;
+}
+[data-tema="claro"]{
+  --bg:#f3f6fa; --bg2:#e9eef5; --card:#ffffff; --card2:#f4f7fb; --line:#d8e0eb;
+  --tx:#14202f; --tx2:#4a5b72; --tx3:#7b8aa0;
+  --ac:#0d9488; --ac2:#0f766e; --acbg:rgba(13,148,136,.10);
+  --warn:#b45309; --warnbg:rgba(217,119,6,.10); --bad:#dc2626; --ok:#16a34a;
+  --c-autos:#2563eb; --c-motos:#9333ea; --c-buses:#d97706; --c-camiones:#dc2626;
+  --sh:0 4px 18px rgba(20,32,47,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font-family:Montserrat,system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+a{color:var(--ac)}
+button,input,select{font:inherit;color:inherit}
+svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+/* Barra superior */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:12px;height:58px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--tx)}
+.logo-m{width:34px;height:34px;border-radius:9px;background:var(--ac2);display:grid;place-items:center;color:#fff}
+.logo b{display:block;font-weight:800;font-size:16px;line-height:1.1}
+.logo small{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);font-weight:600}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer;text-decoration:none;color:var(--tx)}
+.btn:hover{border-color:var(--ac)}
+.btn.pri{background:var(--ac2);border-color:var(--ac2);color:#fff}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent}
+.btn.ico{padding:8px;width:38px;height:38px}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+/* Tarjetas y tipografía */
+h1{font-size:clamp(24px,4.4vw,34px);font-weight:800;line-height:1.15;margin:0 0 8px;letter-spacing:-.01em}
+h2{font-size:18px;font-weight:700;margin:0 0 12px}
+h3{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ac);margin:0 0 10px}
+.muted{color:var(--tx2)} .tiny{font-size:12px;color:var(--tx3)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;box-shadow:var(--sh)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+section{margin:22px 0}
+.hero{padding:28px 0 6px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ac)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--card2);color:var(--tx2)}
+.pill.est{border-color:var(--warn);color:var(--warn);background:var(--warnbg)}
+.pill.ok{border-color:var(--ok);color:var(--ok)}
+.pill.bad{border-color:var(--bad);color:var(--bad)}
+/* Formularios */
+label.f{display:block;font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:10px}
+label.f input,label.f select,.in{display:block;width:100%;margin-top:4px;padding:10px 12px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;font-size:14px}
+.in:focus,label.f input:focus{outline:2px solid var(--ac);outline-offset:-1px;border-color:transparent}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+/* Lista de aforos */
+.lista{display:grid;gap:10px}
+.item{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card2);text-decoration:none;color:var(--tx)}
+.item:hover{border-color:var(--ac)}
+.item b{display:block;font-weight:700}
+.item .meta{font-size:12.5px;color:var(--tx2)}
+.item .num{margin-left:auto;text-align:right;font-weight:700;white-space:nowrap}
+.item .num small{display:block;font-size:11px;color:var(--tx3);font-weight:500}
+.vacio{padding:26px;text-align:center;border:1px dashed var(--line);border-radius:12px;color:var(--tx2)}
+/* Vista del aforo */
+.cab{padding:22px 0 8px}
+.tabs{display:flex;gap:4px;padding:4px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;overflow-x:auto;scrollbar-width:none}
+.tabs button{flex:1;min-width:max-content;border:0;background:transparent;padding:10px 14px;border-radius:9px;font-weight:600;font-size:13.5px;color:var(--tx2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+.tabs button[aria-selected="true"]{background:var(--card);color:var(--tx);box-shadow:var(--sh)}
+/* Captura en campo */
+.reloj{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.reloj .iv{font-size:clamp(26px,7vw,40px);font-weight:800;letter-spacing:-.02em}
+.reloj .tot{font-size:14px;color:var(--tx2)}
+.contadores{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.cnt{position:relative;border:0;border-radius:18px;min-height:clamp(120px,24vh,190px);padding:16px;cursor:pointer;color:#fff;text-align:left;display:flex;flex-direction:column;justify-content:space-between;touch-action:manipulation;user-select:none;-webkit-user-select:none;transition:transform .06s}
+.cnt:active{transform:scale(.97)}
+.cnt .n{font-size:clamp(38px,10vw,58px);font-weight:800;line-height:1}
+.cnt .l{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.cnt .l svg{width:26px;height:26px;stroke-width:1.8}
+.cnt .mas{position:absolute;right:14px;top:12px;font-size:13px;font-weight:700;opacity:.85}
+.cnt.autos{background:#2563eb} .cnt.motos{background:#7e22ce} .cnt.buses{background:#b45309} .cnt.camiones{background:#b91c1c}
+.cnt.flash{animation:fl .25s}
+@keyframes fl{0%{filter:brightness(1.5)}100%{filter:none}}
+.deshacer{margin-top:12px;width:100%;padding:14px;font-size:15px}
+/* Tabla */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);font-weight:700;background:var(--card2);position:sticky;top:0}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+tr.pk td{background:var(--acbg)}
+td input{width:72px;padding:7px 8px;text-align:right;background:var(--bg2);border:1px solid var(--line);border-radius:8px}
+td input:focus{outline:2px solid var(--ac);border-color:transparent}
+td.b{font-weight:700}
+/* Resultados */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi small{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
+.kpi b{display:block;font-size:26px;font-weight:800;margin-top:4px;line-height:1.15}
+.kpi span{font-size:12px;color:var(--tx2)}
+.kpi.ac b{color:var(--ac)}
+.chart svg{width:100%;height:auto;display:block}
+.chart .eje{stroke:var(--line)} .chart text{fill:var(--tx3);font-size:11px;font-family:Montserrat,sans-serif}
+.barra{display:flex;height:16px;border-radius:999px;overflow:hidden;background:var(--bg2);margin:6px 0 12px}
+.ley{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px 14px;font-size:13px}
+.ley i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.nota{font-size:12.5px;color:var(--tx2);border-left:3px solid var(--warn);background:var(--warnbg);padding:10px 12px;border-radius:0 10px 10px 0;margin-top:12px}
+.fuentes li{margin-bottom:8px;font-size:13.5px}
+.caso{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.caso:last-child{border-bottom:0}
+.foot{padding:30px 0 50px;color:var(--tx3);font-size:12.5px;border-top:1px solid var(--line);margin-top:30px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(120px);background:var(--card2);border:1px solid var(--line);box-shadow:var(--sh);border-radius:12px;padding:10px 16px;font-size:13.5px;font-weight:600;transition:transform .25s;z-index:50}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.solo-print{display:none}
+@media (max-width:560px){
+  .f2{grid-template-columns:1fr}
+  .card{padding:16px}
+  .top .wrap{height:54px}
+  .logo small{display:none}
+}
+@media print{
+  :root,[data-tema]{--bg:#fff;--bg2:#fff;--card:#fff;--card2:#f5f5f5;--line:#ccc;--tx:#000;--tx2:#333;--tx3:#555;--ac:#0f766e;--acbg:#e6f4f2;--sh:none}
+  body{font-size:11pt;background:#fff}
+  .top,.tabs,.no-print,.foot,.toast,[data-panel]:not([data-panel="res"]){display:none!important}
+  [data-panel="res"]{display:block!important}
+  .solo-print{display:block}
+  .card,.kpi{break-inside:avoid;box-shadow:none}
+  section{margin:12px 0}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#inicio" aria-label="DemandaVial, inicio">
+      <span class="logo-m"><svg class="i" viewBox="0 0 24 24"><path d="M5 19v-6M10 19V8M15 19v-9M20 19V4"/></svg></span>
+      <span><b>DemandaVial</b><small>Aforos · análisis preliminar</small></span>
+    </a>
+    <span class="sp"></span>
+    <button class="btn ico ghost" id="btn-tema" aria-label="Cambiar a tema claro" title="Cambiar tema"></button>
+  </div>
+</header>
+
+<main class="wrap" id="app"></main>
+
+<footer class="wrap foot">
+  <p><b>DemandaVial</b> es una herramienta preliminar y académica para el análisis de aforos de tránsito. Sus resultados no reemplazan un estudio de tránsito ni el criterio profesional, y no constituyen verificación normativa.</p>
+  <p>Concepción, reglas técnicas, validación y pruebas: Julián García, estudiante de Ingeniería Civil de la Universidad Nacional de Colombia (Bogotá). Implementación con asistencia de IA (Claude, de Anthropic). Los datos se guardan solo en este navegador. <a href="https://github.com/jgvrxiv/demandavial">Código fuente</a>.</p>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="calc.js"></script>
+<script src="casos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
