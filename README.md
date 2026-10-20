@@ -4,7 +4,7 @@ Herramienta web, preliminar y académica, para registrar **aforos vehiculares** 
 15 minutos y obtener la **hora pico móvil**, el **factor de hora pico (FHP)**, la **composición
 vehicular** y una **proyección** de la demanda.
 
-- Sitio: _(enlace de Netlify, pendiente)_
+- Sitio: <https://demandavial.netlify.app>
 - Funciona en el celular, sin cuentas ni servidor: los datos quedan en el navegador (`localStorage`).
 
 > DemandaVial es un apoyo para el análisis preliminar y el estudio de la ingeniería de tránsito.
