@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+<meta charset="utf-8">
+<title>DemandaVial — Soporte de producto</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+@page{size:A4;margin:16mm 15mm 14mm}
+*{box-sizing:border-box}
+body{font-family:Montserrat,sans-serif;color:#1c2633;font-size:9pt;line-height:1.4;margin:0}
+h1{font-size:16pt;font-weight:800;margin:0 0 2px;color:#111a26}
+.sub{color:#5b6b80;font-size:10.5pt;margin-bottom:10px}
+table.d{width:100%;border-collapse:collapse;margin-bottom:8px}
+table.d td{padding:3px 10px;border-bottom:1px solid #d6dee8;vertical-align:top}
+table.d td:first-child{font-weight:700;width:34%;background:#f2f6f9}
+a{color:#0f766e;font-weight:600;text-decoration:none}
+h2{font-size:10pt;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0f766e;margin:9px 0 4px;padding-bottom:3px;border-bottom:1.5px solid #d6dee8}
+p{margin:0 0 4px}
+ul{margin:0;padding-left:18px} li{margin-bottom:2px}
+.pb{break-before:page}
+.shot{border:1px solid #d6dee8;border-radius:6px;display:block;width:100%;object-fit:cover;object-position:top}
+.main{height:112mm;object-fit:contain;background:#f3f6fa}.th{height:62mm}
+.tres{display:grid;grid-template-columns:.62fr 1fr 1fr;gap:12px;align-items:start}
+.cap{font-size:8.8pt;margin:4px 0 10px}
+.fila{display:grid;grid-template-columns:1fr 2.1fr;gap:14px;align-items:start}
+.fila2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.firma{margin-top:10px}
+</style>
+</head>
+<body>
+<h1>DemandaVial – Análisis preliminar de aforos y demanda de tránsito</h1>
+<div class="sub">Soporte de producto: software · 2026 · Colombia</div>
+<table class="d">
+<tr><td>Nombre del software</td><td>DemandaVial – Herramienta de análisis preliminar de aforos y demanda de tránsito</td></tr>
+<tr><td>Año y país</td><td>2026 · Colombia</td></tr>
+<tr><td>Autor</td><td>Julián García</td></tr>
+<tr><td>Tipo</td><td>Aplicación web (software de uso libre, sin registro, licencia MIT)</td></tr>
+<tr><td>Estado</td><td>Funcional y publicado. Cálculos validados con cuatro ejercicios resueltos de fuentes publicadas, que corren como pruebas automáticas y se muestran en la propia aplicación.</td></tr>
+<tr><td>Enlace público</td><td><a href="https://demandavial.netlify.app">https://demandavial.netlify.app</a></td></tr>
+<tr><td>Repositorio</td><td><a href="https://github.com/jgvrxiv/demandavial">https://github.com/jgvrxiv/demandavial</a></td></tr>
+</table>
+
+<h2>Descripción</h2>
+<p>Herramienta digital para registrar y analizar aforos vehiculares por intervalos de 15 minutos. Permite contar en campo desde el celular o digitar conteos ya hechos, y calcula automáticamente el volumen por intervalo, el volumen horario móvil, la hora pico (los cuatro cuartos de hora consecutivos de mayor volumen), el factor de hora pico (FHP), la composición vehicular y el porcentaje de vehículos pesados, además de una proyección de la demanda presentada como estimación. Es una herramienta preliminar y académica: no reemplaza un estudio de tránsito ni constituye verificación normativa.</p>
+
+<h2>Funcionalidades</h2>
+<ul>
+<li>Captura en campo con botones grandes por tipo de vehículo (autos, motos, buses, camiones), intervalo automático según la hora y opción de deshacer.</li>
+<li>Captura digitada en tabla por intervalos de 15 minutos, con relleno de intervalos faltantes.</li>
+<li>Hora pico móvil y FHP = VHP / (4 × Qmáx15), con Qmáx15 tomado dentro de la hora pico.</li>
+<li>Composición vehicular del aforo completo y de la hora pico, y porcentaje de pesados (buses + camiones).</li>
+<li>Proyección V·(1+i)<sup>n</sup> con tasa y horizonte del usuario, señalada como estimación; vehículos equivalentes opcionales solo con factores y fuente que ingresa el usuario.</li>
+<li>Gráfica propia de volumen por intervalo con la hora pico resaltada, tabla resumen, impresión o PDF y exportación a CSV.</li>
+<li>Varios aforos guardados con nombre, lugar, fecha y sentido; tema oscuro y claro; funciona sin servidor ni cuentas.</li>
+</ul>
+
+<h2>Tecnologías</h2>
+<ul>
+<li>HTML, CSS y JavaScript sin frameworks ni dependencias externas; gráfica en SVG generada por la aplicación.</li>
+<li>Almacenamiento local del navegador (<i>localStorage</i>).</li>
+<li>Pruebas automáticas con Node.js (<i>node:test</i>) sobre el mismo módulo de cálculo que usa la aplicación.</li>
+<li>Control de versiones con Git y GitHub; publicación continua en Netlify.</li>
+</ul>
+
+<h2>Rol del autor</h2>
+<p>Concepción del producto, diseño funcional, definición de las reglas técnicas de cálculo (hora pico móvil, FHP, composición, proyección y criterio de no usar factores sin fuente), selección de las fuentes bibliográficas, validación con ejercicios resueltos y pruebas, y dirección del desarrollo. La implementación se realizó con asistencia de inteligencia artificial (Claude, de Anthropic).</p>
+
+<h2>Validación y fuentes</h2>
+<ul>
+<li>Mathew, T. V. <i>Measurement at a Point</i>, IIT Bombay (NPTEL): hora pico 17:00–18:00, VHP 219, FHP 0,84. Coincide.</li>
+<li>Cal y Mayor, R. y Cárdenas, J. <i>Ingeniería de tránsito: fundamentos y aplicaciones</i>, Alfaomega, ej. 8.6: FHMD<sub>15</sub> 0,792 con los datos del enunciado.</li>
+<li>Miovision, <i>Peak Hour Factor (PHF) Explained</i>: dos casos, FHP 0,81 y 0,96. Coinciden.</li>
+<li>Definición del FHP: Transportation Research Board, <i>Highway Capacity Manual</i>, 7.ª ed., 2022.</li>
+</ul>
+
+<h2>Evidencia de autoría</h2>
+<ul>
+<li>Repositorio público con historial de versiones (commits) registradas a nombre del autor desde el 19 de octubre de 2026.</li>
+<li>Aplicación publicada y accesible en el enlace indicado.</li>
+<li>Documentación técnica en el mismo repositorio (README.md y CLAUDE.md) y casos de prueba en <i>casos.js</i> y <i>tests/</i>.</li>
+</ul>
+
+<h2>Evidencia de funcionamiento</h2>
+<p style="color:#5b6b80;margin-bottom:6px">Capturas de la aplicación (19 de octubre de 2026), con los datos del ejercicio publicado de Mathew (IIT Bombay).</p>
+<img class="shot main" src="1-res-top.png" alt="">
+<p class="cap">1. Resultados: hora pico móvil 17:00–18:00, FHP = 219 / (4 × 65) = 0,842 y gráfica de volumen por intervalo con la hora pico resaltada.</p>
+<div class="tres">
+  <div><img class="shot th" src="2-campo.png" alt=""><p class="cap">2. Captura en campo desde el celular: intervalo automático y botones +1.</p></div>
+  <div><img class="shot th" src="3-tabla.png" alt="" style="object-position:left top"><p class="cap">3. Captura digitada por intervalos de 15 minutos.</p></div>
+  <div><img class="shot th" src="4-valid.png" alt="" style="object-position:left top"><p class="cap">4. «Validación»: los ejercicios publicados se recalculan con el código de la app.</p></div>
+</div>
+<p class="firma">Julián García · 2026</p>
+</body>
+</html>
