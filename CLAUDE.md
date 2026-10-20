@@ -51,6 +51,10 @@ posgrado en vías y tránsito. Sigue el estilo de trabajo de su app anterior, **
   5 s con el reloj del dispositivo.
 - **Proyección:** `V·(1+i)^n` sobre el VHP y sobre el volumen total del periodo. Siempre con la
   etiqueta «Estimación».
+- **Sin vehículos:** si el VHP es 0, `horaPico()` devuelve `null` (no se reporta hora pico ni FHP).
+  Si el total es 0, `pctMostrar` y `pctPesados` son `null` y la pantalla muestra «—».
+- **Porcentajes mostrados:** `redondear100()` (residuos mayores) garantiza que sumen 100,0 %. El %
+  de pesados en pantalla y en el CSV es la suma de buses + camiones ya redondeados.
 - **Equivalentes:** `DV.equivalentes()` devuelve `null` si falta cualquier factor.
 - **CSV:** separador `;`, coma decimal y BOM UTF-8 para que Excel en español lo abra bien.
 - **Imprimir/PDF:** `@media print` deja solo el panel de resultados con encabezado del aforo.

@@ -52,9 +52,19 @@ sección «Validación» de la app.
 \* El resultado del caso de Cal y Mayor se obtuvo aplicando la fórmula del libro a los datos del
 enunciado. Falta cotejarlo con la solución impresa en la edición que se use.
 
-Además hay pruebas propias de la hora móvil fuera de la hora en punto, de Qmáx tomado dentro de la
-hora pico, del relleno de huecos, de la composición, de la proyección, de los equivalentes y del
-CSV.
+Además hay pruebas propias (22 en total) que cubren:
+
+- **FHP:** Qmáx15 tomado dentro de la hora pico; FHP = 0,25 cuando todo el volumen cae en un solo
+  cuarto de hora.
+- **Hora pico móvil:** ventana de 4 intervalos que empieza fuera de la hora en punto; relleno de
+  huecos con ceros para que la ventana sea continua.
+- **Proyección:** crecimiento compuesto año a año (igual a multiplicar n veces por 1+i y mayor que
+  el lineal); datos no válidos no dan número.
+- **Composición:** los porcentajes suman 100 %, y los mostrados con un decimal suman exactamente
+  100,0 % (redondeo por residuos mayores).
+- **Entradas vacías o en cero:** campos vacíos, texto o negativos cuentan como cero; un aforo sin
+  vehículos no reporta hora pico, FHP ni composición; ningún resultado ni el CSV contiene NaN o
+  infinito.
 
 ```bash
 npm test

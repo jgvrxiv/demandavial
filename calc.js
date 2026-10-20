@@ -69,6 +69,7 @@
     let k = 0;
     for (let i = 1; i < hm.length; i++) if (hm[i] > hm[k]) k = i;
     const vhp = hm[k];
+    if (vhp <= 0) return null; // sin vehículos no hay hora pico que reportar
     const qmax = Math.max(vols[k], vols[k + 1], vols[k + 2], vols[k + 3]);
     return {
       inicio: k,
@@ -87,7 +88,26 @@
     const pct = {};
     for (const t of TIPOS) pct[t] = total ? (100 * tot[t]) / total : 0;
     const pesados = PESADOS.reduce((s, t) => s + tot[t], 0);
-    return { totales: tot, total, pct, pesados, pctPesados: total ? (100 * pesados) / total : 0 };
+    return {
+      totales: tot, total, pct, pctMostrar: total ? redondear100(pct) : null, pesados,
+      pctPesados: total ? (100 * pesados) / total : null,
+    };
+  }
+
+  /* Redondea porcentajes a un decimal de modo que sumen exactamente 100,0
+     (método de residuos mayores): se trunca y las décimas que faltan se asignan
+     a los valores con mayor residuo. */
+  function redondear100(pct) {
+    const claves = Object.keys(pct);
+    const dec = claves.map((k) => {
+      const x = pct[k] * 10;
+      return { k, piso: Math.floor(x + 1e-9), resto: x - Math.floor(x + 1e-9) };
+    });
+    let faltan = 1000 - dec.reduce((s, d) => s + d.piso, 0);
+    dec.slice().sort((a, b) => b.resto - a.resto).forEach((d) => { if (faltan > 0) { d.piso++; faltan--; } });
+    const out = {};
+    for (const d of dec) out[d.k] = d.piso / 10;
+    return out;
   }
 
   // Proyección geométrica V·(1+i)^n — i en fracción (0.03 = 3 %). Es una estimación.
@@ -145,14 +165,15 @@
       L.push(["FHP", dec(r.pico.fhp, 3)].join(";"));
     }
     L.push(["Volumen total", r.comp.total].join(";"));
-    for (const t of TIPOS) L.push(["% " + t, dec(r.comp.pct[t], 1)].join(";"));
-    L.push(["% pesados (buses + camiones)", dec(r.comp.pctPesados, 1)].join(";"));
+    const pm = r.comp.pctMostrar;
+    for (const t of TIPOS) L.push(["% " + t, pm ? dec(pm[t], 1) : ""].join(";"));
+    L.push(["% pesados (buses + camiones)", pm ? dec(pm.buses + pm.camiones, 1) : ""].join(";"));
     return L.join("\r\n");
   }
 
   const DV = {
     TIPOS, PESADOS, aMinutos, aHora, cuartoDeHora, volumenIntervalo, normalizar,
-    horasMoviles, horaPico, composicion, proyeccion, equivalentes, analizar, aCSV,
+    horasMoviles, horaPico, composicion, redondear100, proyeccion, equivalentes, analizar, aCSV,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = DV;
   else root.DV = DV;

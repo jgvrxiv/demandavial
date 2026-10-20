@@ -74,3 +74,80 @@ test("CSV con separador ; y coma decimal", () => {
   assert.match(csv, /FHP;0,842/);
   assert.match(csv, /Hora pico;17:00-18:00/);
 });
+
+/* ---------- Bordes: composición que suma 100 % y entradas vacías o en cero ---------- */
+
+const suma = (o) => Object.values(o).reduce((s, x) => s + x, 0);
+
+test("Composición: los porcentajes sin redondear suman 100 %", () => {
+  for (const conteo of [[1, 1, 1, 0], [7, 3, 1, 2], [268, 94, 32, 25], [1, 0, 0, 0], [999, 1, 1, 1]]) {
+    const c = DV.composicion([iv("07:00", ...conteo)]);
+    assert.ok(Math.abs(suma(c.pct) - 100) < 1e-9, `suma ${suma(c.pct)} para ${conteo}`);
+  }
+});
+
+test("Composición: los porcentajes mostrados (1 decimal) suman exactamente 100,0 %", () => {
+  // Con redondeo simple, 1-1-1 daría 33,3 × 3 = 99,9 %
+  for (const conteo of [[1, 1, 1, 0], [1, 1, 1, 1], [2, 2, 2, 1], [7, 3, 1, 2], [268, 94, 32, 25], [1, 5, 9, 13], [999, 1, 1, 1]]) {
+    const c = DV.composicion([iv("07:00", ...conteo)]);
+    const decimas = Object.values(c.pctMostrar).map((x) => Math.round(x * 10));
+    assert.equal(decimas.reduce((s, x) => s + x, 0), 1000, `para ${conteo}: ${JSON.stringify(c.pctMostrar)}`);
+    for (const t of DV.TIPOS) assert.ok(Math.abs(c.pctMostrar[t] - c.pct[t]) < 0.1 + 1e-9, "cada valor se aparta menos de 0,1");
+  }
+});
+
+test("Composición con total cero: no hay porcentajes (null), no 0 % ni NaN", () => {
+  const c = DV.composicion([iv("07:00", 0, 0, 0, 0)]);
+  assert.equal(c.total, 0);
+  assert.equal(c.pctMostrar, null);
+  assert.equal(c.pctPesados, null);
+  for (const t of DV.TIPOS) assert.ok(!Number.isNaN(c.pct[t]));
+  assert.equal(DV.composicion([]).total, 0);
+});
+
+test("Aforo todo en ceros: no se reporta hora pico ni FHP", () => {
+  const r = DV.analizar({ intervalos: ["07:00", "07:15", "07:30", "07:45", "08:00"].map((t) => iv(t)) });
+  assert.equal(r.pico, null);
+  assert.equal(r.picoComp, null);
+  assert.deepEqual(r.vols, [0, 0, 0, 0, 0]);
+});
+
+test("Hora pico con ceros dentro de la ventana: el FHP sigue entre 0,25 y 1", () => {
+  const p = DV.horaPico([0, 0, 0, 12, 0, 0]);
+  assert.equal(p.vhp, 12);
+  assert.equal(p.qmax, 12);
+  assert.equal(p.fhp, 0.25); // caso extremo: todo el volumen en un solo cuarto de hora
+});
+
+test("Campos vacíos, texto, null o negativos cuentan como cero", () => {
+  const r = DV.analizar({ intervalos: [iv("07:00", "", null, undefined, "abc"), iv("07:15", -5, 3, "2", 1)] });
+  assert.deepEqual(r.vols, [0, 6]);
+  assert.equal(r.pico, null); // menos de 4 intervalos
+  for (const v of r.vols) assert.ok(Number.isFinite(v));
+});
+
+test("Ningún resultado es NaN o infinito con datos vacíos", () => {
+  for (const ivs of [[], [iv("07:00")], ["07:00", "07:15", "07:30", "07:45"].map((t) => iv(t, "", "", "", ""))]) {
+    const r = DV.analizar({ intervalos: ivs });
+    const nums = [...r.vols, ...r.horas, r.comp.total, ...Object.values(r.comp.pct)];
+    if (r.pico) nums.push(r.pico.vhp, r.pico.qmax, r.pico.fhp);
+    for (const x of nums) assert.ok(Number.isFinite(x), `valor no finito: ${x}`);
+    assert.doesNotMatch(DV.aCSV({ intervalos: ivs }), /NaN|Infinity|undefined/);
+  }
+});
+
+test("Proyección con datos no válidos devuelve null; con V = 0 da 0", () => {
+  assert.equal(DV.proyeccion(100, NaN, 5), null);
+  assert.equal(DV.proyeccion(100, 0.03, NaN), null);
+  assert.equal(DV.proyeccion(100, -1, 5), null); // tasa de -100 % o menor
+  assert.equal(DV.proyeccion(0, 0.03, 10), 0);
+  assert.equal(DV.proyeccion(100, 0.03, 0), 100);
+});
+
+test("Proyección: crecimiento compuesto año a año, no lineal", () => {
+  const V = 1000, i = 0.05;
+  let compuesto = V;
+  for (let k = 0; k < 20; k++) compuesto *= 1 + i;
+  assert.ok(Math.abs(DV.proyeccion(V, i, 20) - compuesto) < 1e-6);
+  assert.ok(DV.proyeccion(V, i, 20) > V * (1 + i * 20)); // supera al crecimiento lineal (2000)
+});

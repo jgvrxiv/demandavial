@@ -311,11 +311,12 @@
   /* Gráfica SVG de volumen por intervalo, con la hora pico resaltada */
   function grafica(r) {
     const n = r.vols.length; if (!n) return "";
+    if (!r.comp.total) return '<p class="muted" style="margin:0">Sin vehículos registrados: no hay volúmenes que graficar.</p>';
     const W = 760, H = 290, ml = 44, mr = 12, mt = 26, mb = 40;
     const max = Math.max(...r.vols, 1);
     // Paso "redondo" (1, 2 o 5 × 10^k) para unas 4 divisiones
     const bruto = max / 4, mag = Math.pow(10, Math.floor(Math.log10(bruto)));
-    const paso = [1, 2, 5, 10].map((f) => f * mag).find((x) => x >= bruto);
+    const paso = Math.max(1, [1, 2, 5, 10].map((f) => f * mag).find((x) => x >= bruto)); // conteos enteros
     const div = Math.ceil(max / paso), tope = paso * div;
     const bw = (W - ml - mr) / n;
     const y = (v) => mt + (H - mt - mb) * (1 - v / tope);
@@ -337,9 +338,15 @@
     return s;
   }
 
+  // % de pesados coherente con los porcentajes mostrados (buses + camiones redondeados)
+  const pctPesados = (c) => (c.pctMostrar ? c.pctMostrar.buses + c.pctMostrar.camiones : null);
+  const pctTxt = (x) => (x == null ? "—" : fmt(x, 1) + " %");
+
   function barraComp(c) {
-    return `<div class="barra">${TIPOS.map((t) => `<span style="width:${c.pct[t]}%;background:var(--c-${t})" title="${NOMBRES[t]} ${fmt(c.pct[t], 1)} %"></span>`).join("")}</div>
-      <div class="ley">${TIPOS.map((t) => `<div><i style="background:var(--c-${t})"></i>${NOMBRES[t]}: <b>${fmt(c.pct[t], 1)} %</b> <span class="tiny">(${fmt(c.totales[t])})</span></div>`).join("")}</div>`;
+    if (!c.total) return '<p class="muted" style="margin:0">Sin vehículos registrados: la composición no aplica.</p>';
+    const pm = c.pctMostrar;
+    return `<div class="barra">${TIPOS.map((t) => `<span style="width:${c.pct[t]}%;background:var(--c-${t})" title="${NOMBRES[t]} ${pctTxt(pm[t])}"></span>`).join("")}</div>
+      <div class="ley">${TIPOS.map((t) => `<div><i style="background:var(--c-${t})"></i>${NOMBRES[t]}: <b>${pctTxt(pm[t])}</b> <span class="tiny">(${fmt(c.totales[t])})</span></div>`).join("")}</div>`;
   }
 
   /* Resultados */
@@ -361,19 +368,19 @@
         <button class="btn" id="r-imp">${ico("imp")}Imprimir o PDF</button>
       </div>
       <div class="kpis">
-        <div class="kpi ac"><small>Hora pico</small><b>${p ? rango(iniP, 60) : "—"}</b><span>${p ? "Hora móvil de mayor volumen" : "Se necesitan 4 intervalos"}</span></div>
+        <div class="kpi ac"><small>Hora pico</small><b>${p ? rango(iniP, 60) : "—"}</b><span>${p ? "Hora móvil de mayor volumen" : r.intervalos.length < 4 ? "Se necesitan 4 intervalos" : "Sin vehículos registrados"}</span></div>
         <div class="kpi"><small>Volumen hora pico</small><b>${p ? fmt(p.vhp) : "—"}</b><span>veh/h</span></div>
         <div class="kpi ac"><small>FHP</small><b>${p && p.fhp != null ? fmt(p.fhp, 3) : "—"}</b><span>${p ? `${fmt(p.vhp)} / (4 × ${fmt(p.qmax)})` : ""}</span></div>
         <div class="kpi"><small>Máx. 15 min en hora pico</small><b>${p ? fmt(p.qmax) : "—"}</b><span>${p ? `Flujo equivalente ${fmt(p.tasaFlujo)} veh/h` : ""}</span></div>
         <div class="kpi"><small>Volumen total</small><b>${fmt(r.comp.total)}</b><span>${r.intervalos.length} intervalos (${fmt(r.intervalos.length / 4, 2)} h)</span></div>
-        <div class="kpi"><small>Pesados</small><b>${fmt(r.comp.pctPesados, 1)} %</b><span>Buses + camiones</span></div>
+        <div class="kpi"><small>Pesados</small><b>${pctTxt(pctPesados(r.comp))}</b><span>Buses + camiones</span></div>
       </div>
 
       <section class="card chart"><h3>Volumen por intervalo de 15 minutos</h3>${grafica(r)}</section>
 
       <section class="grid g2">
         <div class="card"><h3>Composición vehicular — aforo completo</h3>${barraComp(r.comp)}</div>
-        <div class="card"><h3>Composición vehicular — hora pico</h3>${r.picoComp ? barraComp(r.picoComp) + `<p class="tiny" style="margin:10px 0 0">Pesados en la hora pico: <b>${fmt(r.picoComp.pctPesados, 1)} %</b></p>` : '<p class="muted">Se necesitan al menos 4 intervalos.</p>'}</div>
+        <div class="card"><h3>Composición vehicular — hora pico</h3>${r.picoComp ? barraComp(r.picoComp) + `<p class="tiny" style="margin:10px 0 0">Pesados en la hora pico: <b>${pctTxt(pctPesados(r.picoComp))}</b></p>` : `<p class="muted">${r.intervalos.length < 4 ? "Se necesitan al menos 4 intervalos." : "No hay hora pico: no se registraron vehículos."}</p>`}</div>
       </section>
 
       <section class="grid g2">
@@ -402,7 +409,7 @@
           <tbody>${filas}</tbody>
           <tfoot><tr><td class="b">Total</td>${TIPOS.map((t) => `<td class="b">${fmt(r.comp.totales[t])}</td>`).join("")}<td class="b">${fmt(r.comp.total)}</td><td></td></tr></tfoot>
         </table></div>
-        <p class="tiny" style="margin:10px 0 0">Las filas resaltadas forman la hora pico. «Hora móvil desde aquí» es la suma de ese intervalo y los tres siguientes.</p>
+        <p class="tiny" style="margin:10px 0 0">Los porcentajes se redondean a un decimal de forma que sumen 100,0 %. Las filas resaltadas forman la hora pico. «Hora móvil desde aquí» es la suma de ese intervalo y los tres siguientes.</p>
       </section>
       <p class="tiny">Resultados preliminares con fines académicos. FHP según la definición del Highway Capacity Manual (TRB) y el FHMD de Cal y Mayor y Cárdenas; ver fuentes en la página de inicio.</p>`;
 
