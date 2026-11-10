@@ -24,6 +24,8 @@
     csv: '<path d="M14 3v5h5M14 3H6v18h12V8z"/><path d="M9 14h6M9 17h4"/>',
     basura: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
     atras: '<path d="M15 18 9 12l6-6"/>',
+    sig: '<path d="m9 18 6-6-6-6"/>',
+    video: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m16 10 6-3v10l-6-3"/>',
     check: '<path d="m5 12 5 5 9-10"/>',
     x: '<path d="M6 6l12 12M18 6 6 18"/>',
   };
@@ -205,26 +207,46 @@
     ({ campo: panelCampo, tabla: panelTabla, res: panelRes, datos: panelDatos }[tab] || panelCampo)(a, panel);
   }
 
-  /* Captura en campo: el intervalo sale de la hora actual */
+  /* Captura con botones. Dos modos:
+     - «En vivo»: el intervalo sale del reloj del dispositivo (conteo en la vía).
+     - «Grabación»: el usuario fija el intervalo y lo avanza a mano (videos acelerados o en pausa). */
   function panelCampo(a, el) {
+    const modo = a.modoCampo === "grabacion" ? "grabacion" : "vivo";
+    if (!a.ivManual) a.ivManual = a.intervalos.length ? a.intervalos[a.intervalos.length - 1].t : "07:00";
     el.innerHTML = `
       <div class="card">
+        <div class="seg" role="radiogroup" aria-label="Modo de conteo">
+          <button role="radio" aria-checked="${modo === "vivo"}" data-modo="vivo">${ico("campo")}En vivo</button>
+          <button role="radio" aria-checked="${modo === "grabacion"}" data-modo="grabacion">${ico("video")}Grabación</button>
+        </div>
         <div class="reloj">
-          <div><div class="tiny">Intervalo actual (automático)</div><div class="iv" id="c-iv"></div></div>
+          <div>
+            <div class="tiny">${modo === "vivo" ? "Intervalo actual (según el reloj)" : "Intervalo de la grabación (lo eliges tú)"}</div>
+            <div class="iv" id="c-iv"></div>
+          </div>
           <div class="tot" id="c-tot"></div>
         </div>
+        ${modo === "grabacion" ? `
+        <div class="manual">
+          <button class="btn" id="c-prev" aria-label="Intervalo anterior">${ico("atras")}</button>
+          <label class="f" style="margin:0;flex:1">Inicio del intervalo<input type="time" step="900" id="c-hora" value="${a.ivManual}"></label>
+          <button class="btn pri" id="c-next">Siguiente${ico("sig")}</button>
+        </div>` : ""}
         <div class="contadores">${TIPOS.map((t) => `
           <button class="cnt ${t}" data-t="${t}" aria-label="Sumar un ${NOMBRES[t].toLowerCase().replace(/s$/, "")}">
             <span class="mas">+1</span><span class="n" data-n="${t}">0</span><span class="l">${ico(t)}${NOMBRES[t]}</span>
           </button>`).join("")}
         </div>
         <button class="btn deshacer" id="c-undo">${ico("deshacer")}<span>Deshacer</span></button>
-        <p class="tiny" style="margin:12px 0 0">Cada toque suma 1 al cuarto de hora en curso según el reloj del celular. Al cambiar de cuarto de hora, el conteo sigue en el intervalo nuevo. Los datos se guardan al instante.</p>
+        <p class="tiny" style="margin:12px 0 0">${modo === "vivo"
+          ? "Cada toque suma 1 al cuarto de hora en curso según el reloj del celular. Al cambiar de cuarto de hora, el conteo sigue en el intervalo nuevo. Usa este modo cuando cuentas en la vía."
+          : "Cada toque suma 1 al intervalo elegido, sin importar la hora real. Pausa o acelera el video cuando quieras; cuando el reloj de la grabación pase al siguiente cuarto de hora, toca «Siguiente»."} Los datos se guardan al instante.</p>
       </div>`;
 
+    const intervaloActivo = () => (modo === "vivo" ? cuartoDeHora(new Date()) : a.ivManual);
     let actual = "";
     function pintar() {
-      actual = cuartoDeHora(new Date());
+      actual = intervaloActivo();
       const iv = intervalo(a, actual, false) || {};
       $("#c-iv").textContent = rango(actual);
       for (const t of TIPOS) $(`[data-n="${t}"]`).textContent = iv[t] || 0;
@@ -232,10 +254,24 @@
       const u = a.log[a.log.length - 1];
       $("#c-undo").disabled = !u;
       $("#c-undo span").textContent = u ? `Deshacer: ${NOMBRES[u.tipo].toLowerCase()} (${u.t})` : "Deshacer";
+      const h = $("#c-hora", el); if (h && h.value !== actual) h.value = actual;
+    }
+    function moverManual(min) {
+      a.ivManual = cuartoDeHora(Math.min(1425, Math.max(0, min))); // dentro del mismo día
+      guardar(); pintar();
+    }
+    el.querySelector(".seg").onclick = (e) => {
+      const b = e.target.closest("[data-modo]"); if (!b || b.dataset.modo === modo) return;
+      a.modoCampo = b.dataset.modo; guardar(); clearInterval(relojT); panelCampo(a, el);
+    };
+    if (modo === "grabacion") {
+      $("#c-prev", el).onclick = () => moverManual(aMinutos(a.ivManual) - 15);
+      $("#c-next", el).onclick = () => moverManual(aMinutos(a.ivManual) + 15);
+      $("#c-hora", el).onchange = (e) => { if (e.target.value) moverManual(aMinutos(e.target.value)); };
     }
     el.querySelector(".contadores").addEventListener("click", (e) => {
       const b = e.target.closest("[data-t]"); if (!b) return;
-      const t = cuartoDeHora(new Date());
+      const t = intervaloActivo();
       intervalo(a, t)[b.dataset.t]++;
       a.log.push({ t, tipo: b.dataset.t });
       if (a.log.length > 500) a.log.shift();
@@ -250,7 +286,7 @@
       guardar(); pintar(); toast(`Se quitó un registro de ${NOMBRES[u.tipo].toLowerCase()} (${u.t})`);
     };
     pintar();
-    relojT = setInterval(() => { if (cuartoDeHora(new Date()) !== actual) pintar(); }, 5000);
+    if (modo === "vivo") relojT = setInterval(() => { if (cuartoDeHora(new Date()) !== actual) pintar(); }, 5000);
   }
 
   /* Captura digitada */
